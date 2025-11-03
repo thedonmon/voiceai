@@ -1,0 +1,372 @@
+{
+  "tools": [
+    {
+      "name": "create_whiteboard_session",
+      "description": "Creates a new whiteboard session for collaborative diagramming. Returns a session ID that can be used to access and manipulate the canvas.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Optional unique name for the session. If not provided, a UUID will be generated. Use memorable names for easier access (e.g., 'architecture-review', 'sprint-planning')."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_canvas_snapshot",
+      "description": "Gets an AI-friendly description of the current canvas state, including all shapes, text, and connections. Use this to understand what's currently on the whiteboard before making changes.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID or session name"
+          }
+        },
+        "required": ["session_id"]
+      }
+    },
+    {
+      "name": "create_diagram",
+      "description": "AUTONOMOUS: Creates a complete diagram with nodes and connections in one operation. Best for quickly building architecture diagrams, flowcharts, or mind maps. Automatically handles layout and positioning.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID or session name"
+          },
+          "nodes": {
+            "type": "array",
+            "description": "Array of nodes/shapes to create",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "Text label for the node"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["rectangle", "ellipse", "diamond"],
+                  "description": "Shape type (default: rectangle)",
+                  "default": "rectangle"
+                },
+                "color": {
+                  "type": "string",
+                  "description": "Background color hex code (default: #ffffff)"
+                }
+              },
+              "required": ["label"]
+            }
+          },
+          "connections": {
+            "type": "array",
+            "description": "Array of connections/arrows between nodes (optional)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "string",
+                  "description": "Label of the source node"
+                },
+                "to": {
+                  "type": "string",
+                  "description": "Label of the target node"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "Optional label for the arrow"
+                }
+              },
+              "required": ["from", "to"]
+            }
+          },
+          "layout": {
+            "type": "string",
+            "enum": ["horizontal", "vertical", "grid"],
+            "description": "Auto-layout style (default: horizontal)",
+            "default": "horizontal"
+          }
+        },
+        "required": ["session_id", "nodes"]
+      }
+    },
+    {
+      "name": "add_shapes",
+      "description": "AUTONOMOUS: Adds individual shapes to the canvas with smart defaults. Use this when you want to add specific shapes with minimal configuration.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID or session name"
+          },
+          "shapes": {
+            "type": "array",
+            "description": "Array of shapes to add",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["rectangle", "ellipse", "diamond"],
+                  "description": "Shape type",
+                  "default": "rectangle"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "Text label"
+                },
+                "x": {
+                  "type": "number",
+                  "description": "X position (default: 100)"
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Y position (default: 100)"
+                },
+                "width": {
+                  "type": "number",
+                  "description": "Width (default: 150)"
+                },
+                "height": {
+                  "type": "number",
+                  "description": "Height (default: 100)"
+                },
+                "backgroundColor": {
+                  "type": "string",
+                  "description": "Background color (default: #ffffff)"
+                },
+                "strokeColor": {
+                  "type": "string",
+                  "description": "Border color (default: #1e1e1e)"
+                }
+              },
+              "required": ["label"]
+            }
+          }
+        },
+        "required": ["session_id", "shapes"]
+      }
+    },
+    {
+      "name": "add_arrows",
+      "description": "AUTONOMOUS: Creates arrows/connections between shapes or specific coordinates. Automatically handles binding to shapes when element IDs are provided.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID or session name"
+          },
+          "arrows": {
+            "type": "array",
+            "description": "Array of arrows to create",
+            "items": {
+              "type": "object",
+              "properties": {
+                "startX": {
+                  "type": "number",
+                  "description": "Starting X coordinate"
+                },
+                "startY": {
+                  "type": "number",
+                  "description": "Starting Y coordinate"
+                },
+                "endX": {
+                  "type": "number",
+                  "description": "Ending X coordinate"
+                },
+                "endY": {
+                  "type": "number",
+                  "description": "Ending Y coordinate"
+                },
+                "startElementId": {
+                  "type": "string",
+                  "description": "Optional: ID of element to bind arrow start to"
+                },
+                "endElementId": {
+                  "type": "string",
+                  "description": "Optional: ID of element to bind arrow end to"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "Optional label for the arrow"
+                },
+                "strokeColor": {
+                  "type": "string",
+                  "description": "Arrow color (default: #1e1e1e)"
+                }
+              },
+              "required": ["startX", "startY", "endX", "endY"]
+            }
+          }
+        },
+        "required": ["session_id", "arrows"]
+      }
+    },
+    {
+      "name": "add_canvas_elements",
+      "description": "Adds or updates elements on the whiteboard canvas. Can add shapes (rectangles, ellipses, diamonds), arrows/lines, and text. Existing elements with matching IDs will be updated.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID or session name"
+          },
+          "elements": {
+            "type": "array",
+            "description": "Array of Excalidraw elements to add or update",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Unique identifier for the element (generate a UUID)"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["rectangle", "ellipse", "diamond", "arrow", "line", "text"],
+                  "description": "Type of element to draw"
+                },
+                "x": {
+                  "type": "number",
+                  "description": "X coordinate (top-left corner)"
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Y coordinate (top-left corner)"
+                },
+                "width": {
+                  "type": "number",
+                  "description": "Width of the element"
+                },
+                "height": {
+                  "type": "number",
+                  "description": "Height of the element"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Optional text label for the element"
+                },
+                "backgroundColor": {
+                  "type": "string",
+                  "description": "Background color (hex format, e.g., '#ffffff')",
+                  "default": "#ffffff"
+                },
+                "strokeColor": {
+                  "type": "string",
+                  "description": "Border/line color (hex format, e.g., '#000000')",
+                  "default": "#000000"
+                },
+                "strokeWidth": {
+                  "type": "number",
+                  "description": "Line thickness",
+                  "default": 1
+                }
+              },
+              "required": ["id", "type", "x", "y", "width", "height"]
+            }
+          }
+        },
+        "required": ["session_id", "elements"]
+      }
+    },
+    {
+      "name": "create_rectangle",
+      "description": "Helper function to create a labeled rectangle on the canvas. Useful for boxes in architecture diagrams, flowcharts, or mind maps.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID or session name"
+          },
+          "label": {
+            "type": "string",
+            "description": "Text label for the rectangle"
+          },
+          "x": {
+            "type": "number",
+            "description": "X coordinate"
+          },
+          "y": {
+            "type": "number",
+            "description": "Y coordinate"
+          },
+          "width": {
+            "type": "number",
+            "description": "Width of rectangle",
+            "default": 150
+          },
+          "height": {
+            "type": "number",
+            "description": "Height of rectangle",
+            "default": 100
+          },
+          "color": {
+            "type": "string",
+            "description": "Background color (hex)",
+            "default": "#ffffff"
+          }
+        },
+        "required": ["session_id", "label", "x", "y"]
+      }
+    },
+    {
+      "name": "create_arrow",
+      "description": "Creates an arrow connecting two points or two elements on the canvas. Useful for showing relationships, data flow, or process steps.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID or session name"
+          },
+          "start_x": {
+            "type": "number",
+            "description": "Starting X coordinate"
+          },
+          "start_y": {
+            "type": "number",
+            "description": "Starting Y coordinate"
+          },
+          "end_x": {
+            "type": "number",
+            "description": "Ending X coordinate"
+          },
+          "end_y": {
+            "type": "number",
+            "description": "Ending Y coordinate"
+          },
+          "start_element_id": {
+            "type": "string",
+            "description": "Optional: ID of element to connect from (binds arrow to element)"
+          },
+          "end_element_id": {
+            "type": "string",
+            "description": "Optional: ID of element to connect to (binds arrow to element)"
+          }
+        },
+        "required": ["session_id", "start_x", "start_y", "end_x", "end_y"]
+      }
+    },
+    {
+      "name": "clear_canvas",
+      "description": "Removes all elements from the canvas. Use with caution - this cannot be undone.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID or session name"
+          }
+        },
+        "required": ["session_id"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,321 @@
+{
+  "name": "voice-whiteboard",
+  "description": "Collaborative whiteboard for Voice AI - create diagrams, architecture designs, and visual brainstorming",
+  "version": "1.0.0",
+  "base_url": "http://localhost:3000/api",
+  "tools": [
+    {
+      "name": "create_whiteboard_session",
+      "description": "Creates a new whiteboard session. Use a memorable name so you can reference it throughout the conversation.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Memorable session name (e.g., 'architecture-review', 'api-design'). Optional - UUID generated if not provided."
+          }
+        }
+      },
+      "http_method": "POST",
+      "endpoint": "/sessions"
+    },
+    {
+      "name": "create_diagram",
+      "description": "AUTONOMOUS: Creates a complete diagram with nodes and connections in one operation. Best for architecture diagrams, flowcharts, mind maps. Automatically handles layout and positioning. Use this when starting a new design.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID or session name to add diagram to"
+          },
+          "nodes": {
+            "type": "array",
+            "description": "Array of nodes/components to create",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "Text label for the node (e.g., 'API Gateway', 'Database')"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["rectangle", "ellipse", "diamond"],
+                  "description": "Shape type: rectangle for services/components, ellipse for databases/storage, diamond for decision points",
+                  "default": "rectangle"
+                },
+                "color": {
+                  "type": "string",
+                  "description": "Background color hex code (e.g., '#e3f2fd' for light blue)",
+                  "default": "#ffffff"
+                }
+              },
+              "required": ["label"]
+            }
+          },
+          "connections": {
+            "type": "array",
+            "description": "Array of arrows/connections between nodes (optional)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "string",
+                  "description": "Label of the source node"
+                },
+                "to": {
+                  "type": "string",
+                  "description": "Label of the destination node"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "Optional label for the connection (e.g., 'HTTP', 'SQL', 'publishes')"
+                }
+              },
+              "required": ["from", "to"]
+            }
+          },
+          "layout": {
+            "type": "string",
+            "enum": ["horizontal", "vertical", "grid"],
+            "description": "Layout style: 'horizontal' for left-to-right flow, 'vertical' for top-to-bottom, 'grid' for evenly spaced",
+            "default": "horizontal"
+          }
+        },
+        "required": ["session_id", "nodes"]
+      },
+      "http_method": "POST",
+      "endpoint": "/sessions/{session_id}/diagram"
+    },
+    {
+      "name": "add_shapes",
+      "description": "AUTONOMOUS: Adds individual shapes to the canvas. Use this to add components incrementally after initial diagram is created. Smart defaults handle sizing and styling.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID or session name"
+          },
+          "shapes": {
+            "type": "array",
+            "description": "Array of shapes to add",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "Text label for the shape"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["rectangle", "ellipse", "diamond"],
+                  "description": "Shape type",
+                  "default": "rectangle"
+                },
+                "x": {
+                  "type": "number",
+                  "description": "X position in pixels (optional, defaults to 100)"
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Y position in pixels (optional, defaults to 100)"
+                },
+                "backgroundColor": {
+                  "type": "string",
+                  "description": "Background color hex (optional, defaults to white)"
+                },
+                "strokeColor": {
+                  "type": "string",
+                  "description": "Border color hex (optional, defaults to black)"
+                }
+              },
+              "required": ["label"]
+            }
+          }
+        },
+        "required": ["session_id", "shapes"]
+      },
+      "http_method": "POST",
+      "endpoint": "/sessions/{session_id}/shapes"
+    },
+    {
+      "name": "add_arrows",
+      "description": "AUTONOMOUS: Creates arrows/connections between shapes or coordinates. Use to show data flow, relationships, or process steps.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID or session name"
+          },
+          "arrows": {
+            "type": "array",
+            "description": "Array of arrows to create",
+            "items": {
+              "type": "object",
+              "properties": {
+                "startX": {
+                  "type": "number",
+                  "description": "Starting X coordinate in pixels"
+                },
+                "startY": {
+                  "type": "number",
+                  "description": "Starting Y coordinate in pixels"
+                },
+                "endX": {
+                  "type": "number",
+                  "description": "Ending X coordinate in pixels"
+                },
+                "endY": {
+                  "type": "number",
+                  "description": "Ending Y coordinate in pixels"
+                },
+                "label": {
+                  "type": "string",
+                  "description": "Optional label text for the arrow (e.g., 'HTTP', 'async', 'reads from')"
+                },
+                "strokeColor": {
+                  "type": "string",
+                  "description": "Arrow color hex (optional, defaults to black)"
+                }
+              },
+              "required": ["startX", "startY", "endX", "endY"]
+            }
+          }
+        },
+        "required": ["session_id", "arrows"]
+      },
+      "http_method": "POST",
+      "endpoint": "/sessions/{session_id}/arrows"
+    },
+    {
+      "name": "get_canvas_snapshot",
+      "description": "Gets an AI-friendly description of the current canvas state. Use this to understand what's already on the whiteboard before making changes, or when the user asks 'what's on the canvas?'",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID or session name"
+          }
+        },
+        "required": ["session_id"]
+      },
+      "http_method": "GET",
+      "endpoint": "/sessions/{session_id}/snapshot"
+    },
+    {
+      "name": "get_canvas_elements",
+      "description": "Gets raw Excalidraw elements from the canvas. Use get_canvas_snapshot instead for AI-friendly format. This is for advanced use cases only.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID or session name"
+          }
+        },
+        "required": ["session_id"]
+      },
+      "http_method": "GET",
+      "endpoint": "/sessions/{session_id}/elements"
+    },
+    {
+      "name": "clear_canvas",
+      "description": "Removes all elements from the canvas. Use with caution - this cannot be undone. Ask for confirmation before calling this.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID or session name"
+          }
+        },
+        "required": ["session_id"]
+      },
+      "http_method": "PUT",
+      "endpoint": "/sessions/{session_id}/elements",
+      "request_body": {
+        "elements": []
+      }
+    }
+  ],
+  "usage_examples": [
+    {
+      "scenario": "User wants to design a microservices architecture",
+      "conversation": [
+        {
+          "user": "Let's design a microservices architecture",
+          "ai_action": "create_whiteboard_session",
+          "ai_params": {
+            "name": "microservices-arch"
+          }
+        },
+        {
+          "user": "I need API Gateway, User Service, and Payment Service",
+          "ai_action": "create_diagram",
+          "ai_params": {
+            "session_id": "microservices-arch",
+            "nodes": [
+              {"label": "API Gateway", "type": "rectangle"},
+              {"label": "User Service", "type": "rectangle"},
+              {"label": "Payment Service", "type": "rectangle"}
+            ],
+            "connections": [
+              {"from": "API Gateway", "to": "User Service"},
+              {"from": "API Gateway", "to": "Payment Service"}
+            ],
+            "layout": "horizontal"
+          }
+        },
+        {
+          "user": "Add a database for each service",
+          "ai_action": "add_shapes",
+          "ai_params": {
+            "session_id": "microservices-arch",
+            "shapes": [
+              {"label": "User DB", "type": "ellipse", "x": 350, "y": 350},
+              {"label": "Payment DB", "type": "ellipse", "x": 600, "y": 350}
+            ]
+          }
+        },
+        {
+          "user": "Connect them with arrows",
+          "ai_action": "add_arrows",
+          "ai_params": {
+            "session_id": "microservices-arch",
+            "arrows": [
+              {"startX": 425, "startY": 300, "endX": 425, "endY": 350, "label": "SQL"},
+              {"startX": 675, "startY": 300, "endX": 675, "endY": 350, "label": "SQL"}
+            ]
+          }
+        },
+        {
+          "user": "What's on the canvas now?",
+          "ai_action": "get_canvas_snapshot",
+          "ai_params": {
+            "session_id": "microservices-arch"
+          }
+        }
+      ]
+    }
+  ],
+  "best_practices": [
+    "Always use create_diagram for initial layouts - it handles positioning automatically",
+    "Call get_canvas_snapshot before making changes to understand current state",
+    "Use meaningful labels that describe the component's purpose",
+    "Choose shape types wisely: rectangle for services, ellipse for databases, diamond for decisions",
+    "Use layout 'horizontal' for data flows, 'vertical' for hierarchies, 'grid' for brainstorming",
+    "The user can see changes within 2 seconds via real-time polling",
+    "Both AI and user can modify the canvas - it's truly collaborative"
+  ],
+  "color_suggestions": {
+    "frontend": "#e3f2fd",
+    "backend": "#fff3e0",
+    "database": "#f3e5f5",
+    "external": "#e8f5e9",
+    "cache": "#ffebee"
+  }
+}
